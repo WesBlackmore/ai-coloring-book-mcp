@@ -1,0 +1,41 @@
+{
+    "name": "wesblackmore/ai-coloring-book-mcp",
+    "description": "AI Coloring Book MCP: a Model Context Protocol server exposing coloring-book generation, quotes, and KDP-ready PDF exports, built on the AI Coloring Book Engine.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.2",
+        "ext-pdo_sqlite": "*",
+        "ext-gd": "*",
+        "ext-curl": "*",
+        "ext-mbstring": "*",
+        "mcp/sdk": "0.8.1",
+        "nyholm/psr7": "^1.8"
+    },
+    "suggest": {
+        "league/oauth2-server": "^9.4.1 (optional OAuth 2.1, enabled with MCP_OAUTH_ENABLED=1)",
+        "firebase/php-jwt": "^7.0 (optional OAuth 2.1 token validation)"
+    },
+    "scripts": {
+        "install-engine": [
+            "test -d engine || git clone https://github.com/WesBlackmore/ai-coloring-book-engine.git engine",
+            "composer install --no-interaction -d engine"
+        ],
+        "selfcheck": "php tools/selfcheck.php",
+        "example": "php examples/offline-example.php"
+    },
+    "config": {
+        "platform": {
+            "php": "8.2.34"
+        },
+        "audit": {
+            "ignore": {
+                "PKSA-s52d-n7sx-trsg": "Affects the SDK's own OAuth middleware endpoints, which this package does not mount. OAuth here is served by src/oauth/http.php with explicit body limits."
+            }
+        }
+    },
+    "require-dev": {
+        "league/oauth2-server": "^9.4.1",
+        "firebase/php-jwt": "^7.0"
+    }
+}

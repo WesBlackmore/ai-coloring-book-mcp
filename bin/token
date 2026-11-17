@@ -1,0 +1,51 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/*
+ * Manage personal access tokens.
+ *
+ *   php bin/token issue ACCOUNT_ID LABEL [--days=30] [--scopes=read,write,export]
+ *   php bin/token list ACCOUNT_ID
+ *   php bin/token revoke ACCOUNT_ID TOKEN_ID
+ *
+ * The raw token is printed once by "issue". Only its hash is stored.
+ */
+
+if (PHP_SAPI !== 'cli') exit(1);
+require_once __DIR__ . '/../src/autoload.php';
+
+$arguments = array_slice($argv, 1);
+$options = [];
+$positional = [];
+foreach ($arguments as $argument) {
+    if (preg_match('/^--(days|scopes)=(.*)$/D', $argument, $match) === 1) $options[$match[1]] = $match[2];
+    else $positional[] = $argument;
+}
+$command = $positional[0] ?? '';
+$map = ['read' => MCP_PAT_READ_SCOPE, 'write' => MCP_PAT_WRITE_SCOPE, 'export' => MCP_PAT_EXPORT_SCOPE];
+
+try {
+    if ($command === 'issue' && count($positional) === 3) {
+        $scopes = [];
+        foreach (explode(',', $options['scopes'] ?? 'read,write,export') as $name) {
+            if (!isset($map[trim($name)])) throw new InvalidArgumentException('Unknown scope: ' . trim($name));
+            $scopes[] = $map[trim($name)];
+        }
+        $token = mcp_pat_issue($positional[1], $positional[2], (int) ($options['days'] ?? 30), null, $scopes);
+        echo "token_id:   {$token['id']}\nexpires_at: {$token['expires_at']} UTC\ntoken:      {$token['token']}\n";
+        echo "Store the token now. It cannot be shown again.\n";
+    } elseif ($command === 'list' && count($positional) === 2) {
+        foreach (mcp_pat_list($positional[1]) as $row) echo "{$row['id']}  {$row['label']}  [{$row['scopes']}]  expires {$row['expires_at']}\n";
+    } elseif ($command === 'revoke' && count($positional) === 3) {
+        echo mcp_pat_revoke($positional[1], $positional[2]) ? "revoked\n" : "not found\n";
+    } else {
+        fwrite(STDERR, "usage: php bin/token issue ACCOUNT_ID LABEL [--days=N] [--scopes=read,write,export]\n"
+            . "       php bin/token list ACCOUNT_ID\n       php bin/token revoke ACCOUNT_ID TOKEN_ID\n");
+        exit(2);
+    }
+} catch (Throwable $error) {
+    fwrite(STDERR, $error->getMessage() . "\n");
+    exit(1);
+}

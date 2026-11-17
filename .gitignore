@@ -1,0 +1,9 @@
+/data/
+/vendor/
+/engine/
+/examples/output/
+*.db
+*.sqlite
+*.sqlite3
+.env
+.DS_Store

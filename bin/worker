@@ -1,0 +1,23 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/*
+ * One pass of background work: the engine's generation queue, then the PDF export queue.
+ * Run it from cron every minute, or in a loop:  php bin/worker --limit=20
+ *
+ * Status reads and tool calls never advance generation; only this worker does.
+ */
+
+if (PHP_SAPI !== 'cli') exit(1);
+require_once __DIR__ . '/../src/autoload.php';
+
+$limit = 20;
+foreach (array_slice($argv, 1) as $argument) {
+    if (preg_match('/^--limit=(\d+)$/D', $argument, $match) === 1) $limit = max(1, min(50, (int) $match[1]));
+}
+
+$generation = coloring_worker_run($limit);
+$exports = mcp_coloring_export_worker_run(null, 4);
+echo json_encode(['generation' => $generation, 'exports' => $exports]), "\n";
